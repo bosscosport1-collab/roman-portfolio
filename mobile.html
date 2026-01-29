@@ -3,237 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Roman AI | Mobile Terminal</title>
+    <title>Roman AI | Mobile Premium</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Manrope:wght@300;600&display=swap');
 
         body {
-            background-color: #050505;
+            background-color: #000;
             color: #fff;
             font-family: 'Manrope', sans-serif;
-            margin: 0; padding: 20px;
-            padding-bottom: 100px;
+            margin: 0; padding: 0;
+            min-height: 100vh;
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
 
-        /* --- ШАПКА --- */
-        .header {
-            text-align: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;
-        }
-        .logo {
-            font-family: 'Oswald', sans-serif; font-size: 1.8rem; color: #39ff14; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
-        }
-        .status { font-size: 0.8rem; color: #666; margin-top: 5px; }
-        .status span { color: #39ff14; }
+        /* ФОН */
+        #canvas1 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
+        .bg-noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: -1; opacity: 0.8; pointer-events: none; }
+        .top-glow { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: radial-gradient(circle, rgba(57,255,20,0.15) 0%, transparent 70%); z-index: -1; pointer-events: none; }
 
-        /* --- ОШИБКИ (Красный блок, если файл не найден) --- */
-        .error-log {
-            background: #330000; border: 1px solid red; color: #ffcccc;
-            padding: 10px; font-size: 0.8rem; margin-bottom: 20px;
-            display: none; border-radius: 8px; font-family: monospace;
-        }
+        .container { padding: 20px; padding-bottom: 120px; max-width: 600px; margin: 0 auto; }
 
-        /* --- РАЗДЕЛЫ --- */
-        .section-title {
-            font-family: 'Oswald', sans-serif; font-size: 1.2rem; color: #fff; margin-top: 40px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border-left: 3px solid #39ff14; padding-left: 10px;
-        }
+        /* ШАПКА */
+        .header { text-align: center; margin-bottom: 40px; margin-top: 20px; position: relative; }
+        .logo { font-family: 'Oswald', sans-serif; font-size: 2rem; color: #fff; letter-spacing: 2px; text-transform: uppercase; position: relative; display: inline-block; }
+        .logo::after { content: ''; width: 8px; height: 8px; background: #39ff14; border-radius: 50%; display: inline-block; margin-left: 5px; box-shadow: 0 0 10px #39ff14; animation: blink 2s infinite; }
+        @keyframes blink { 50% { opacity: 0.3; } }
+        .subtitle { font-size: 0.75rem; color: #888; letter-spacing: 3px; text-transform: uppercase; margin-top: 5px; }
 
-        /* --- ВИДЕО --- */
-        .video-card {
-            background: #111; border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid #222;
-        }
-        /* Стандартный плеер iOS */
-        video {
-            width: 100%;
-            display: block;
-            border-bottom: 1px solid #333;
-            max-height: 50vh;
-            background: #000;
-        }
-        .video-info { padding: 15px; }
-        .video-title { font-weight: bold; font-size: 1rem; color: #eee; }
-        .video-desc { font-size: 0.8rem; color: #888; margin-top: 5px; }
+        /* СТЕКЛЯННЫЕ БЛОКИ */
+        .section-title { font-family: 'Oswald', sans-serif; font-size: 1.1rem; color: #39ff14; margin-top: 50px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0; animation: fadeUp 0.8s forwards; }
+        .section-title::before { content: ''; width: 20px; height: 2px; background: #39ff14; box-shadow: 0 0 5px #39ff14; }
+        
+        .glass-card { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(57, 255, 20, 0.15); border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translateY(20px); transition: transform 0.3s, border-color 0.3s; }
+        .glass-card.visible { animation: fadeUp 0.6s forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
 
-        /* --- МУЗЫКА --- */
-        .track-list { display: flex; flex-direction: column; gap: 10px; }
-        .track-item {
-            background: #111; padding: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #222; cursor: pointer; transition: 0.2s;
-        }
-        .track-item:active { background: #222; }
-        .track-item.playing { border-color: #39ff14; background: rgba(57, 255, 20, 0.1); }
-        .track-info { display: flex; flex-direction: column; }
-        .track-name { font-weight: 600; font-size: 1rem; }
-        .track-meta { font-size: 0.7rem; color: #666; }
-        .play-icon { font-size: 1.2rem; color: #39ff14; }
+        /* ВИДЕО */
+        video { width: 100%; display: block; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .card-content { padding: 15px 20px; }
+        .card-title { font-weight: 700; color: #fff; font-size: 1.1rem; margin-bottom: 5px; }
+        .card-meta { font-size: 0.8rem; color: #888; display: flex; justify-content: space-between; }
 
-        /* --- ПЛЕЕР --- */
-        .sticky-player {
-            position: fixed; bottom: 20px; left: 5%; width: 90%;
-            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px);
-            border: 1px solid #39ff14; border-radius: 50px; padding: 15px 25px;
-            display: none; align-items: center; justify-content: space-between;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 100; box-sizing: border-box;
-        }
-        .sticky-player.active { display: flex; }
-        .current-track-name { font-size: 0.9rem; color: #fff; max-width: 65%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ctrl-btn { background: none; border: none; color: #39ff14; font-size: 1.5rem; cursor: pointer; padding: 0 10px; }
+        /* ГАЛЕРЕЯ (СВАЙП) */
+        .gallery-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scroll-snap-type: x mandatory; -ms-overflow-style: none; scrollbar-width: none; }
+        .gallery-scroll::-webkit-scrollbar { display: none; }
+        
+        .gallery-item { min-width: 260px; height: 350px; background: #111; border-radius: 16px; scroll-snap-align: center; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        .gallery-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px; box-sizing: border-box; }
+        .gallery-tag { background: #39ff14; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; font-family: 'Oswald', sans-serif; text-transform: uppercase; }
 
-        .tg-btn {
-            display: block; text-align: center; background: #39ff14; color: #000; text-decoration: none; padding: 15px; border-radius: 10px; font-weight: bold; font-family: 'Oswald', sans-serif; margin-top: 40px; text-transform: uppercase; box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
-        }
+        /* МУЗЫКА */
+        .track-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
+        .track-item:last-child { border-bottom: none; }
+        .track-icon { width: 40px; height: 40px; background: rgba(57,255,20,0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #39ff14; margin-right: 15px; font-size: 0.8rem; }
+        .track-item.playing .track-icon { background: #39ff14; color: #000; box-shadow: 0 0 15px #39ff14; }
+        
+        /* ПЛЕЕР */
+        .sticky-player { position: fixed; bottom: 20px; left: 5%; width: 90%; background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(57, 255, 20, 0.3); border-radius: 60px; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 40px rgba(0,0,0,0.8); z-index: 100; box-sizing: border-box; transform: translateY(150%); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .sticky-player.active { transform: translateY(0); }
+        .player-info { display: flex; align-items: center; gap: 15px; overflow: hidden; }
+        .player-visual { width: 20px; height: 20px; background: #39ff14; border-radius: 50%; animation: pulse-visual 1s infinite; }
+        @keyframes pulse-visual { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 0; } }
+        .player-text { font-size: 0.9rem; font-weight: bold; white-space: nowrap; }
+        .play-btn { background: none; border: none; color: #39ff14; font-size: 1.8rem; cursor: pointer; }
+
+        .tg-btn { display: block; text-align: center; background: transparent; color: #39ff14; text-decoration: none; padding: 18px; border-radius: 12px; border: 1px solid #39ff14; font-weight: bold; font-family: 'Oswald', sans-serif; margin-top: 40px; text-transform: uppercase; letter-spacing: 2px; transition: 0.3s; }
+        .tg-btn:active { background: #39ff14; color: #000; }
+        .error-log { display: none; background: #300; color: #fcc; padding: 10px; margin-bottom: 20px; border-radius: 8px; font-size: 0.7rem; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">ART-HOLIDAYS</div>
-        <div class="status">MOBILE TERMINAL</div>
-    </div>
+    <canvas id="canvas1"></canvas>
+    <div class="bg-noise"></div>
+    <div class="top-glow"></div>
 
-    <div id="debug-log" class="error-log"></div>
-
-    <div class="section-title">🎬 VIDEO PROD.</div>
-    
-    <div class="video-card">
-        <video controls playsinline preload="metadata" id="video1">
-            <source src="promo.mp4" type="video/mp4">
-            Ваш браузер не поддерживает видео.
-        </video>
-        <div class="video-info">
-            <div class="video-title">Promo Video 1</div>
-            <div class="video-desc">Tap to play • Native Player</div>
+    <div class="container">
+        <div class="header">
+            <div class="logo">ART-HOLIDAYS</div>
+            <div class="subtitle glitch-target">ROMAN AI CREATOR</div>
         </div>
-    </div>
 
-    <div class="video-card">
-        <video controls playsinline preload="metadata" id="video2">
-            <source src="promo2.mp4" type="video/mp4">
-        </video>
-        <div class="video-info">
-            <div class="video-title">Promo Video 2</div>
-            <div class="video-desc">Tap to play • Native Player</div>
-        </div>
-    </div>
-    <div class="video-card">
-        <video controls playsinline preload="metadata" id="video2">
-            <source src="promo3.mp4" type="video/mp4">
-        </video>
-        <div class="video-info">
-            <div class="video-title">Promo Video 3</div>
-            <div class="video-desc">Tap to play • Native Player</div>
-        </div>
-    </div>
+        <div id="debug-log" class="error-log"></div>
 
-    <div class="section-title">🎵 MUSIC LAB</div>
-    <div class="track-list">
-        <div class="track-item" onclick="playTrack('track.mp3', 'Track 1', this)">
-            <div class="track-info">
-                <span class="track-name">Track One</span>
-                <span class="track-meta">MP3 Audio</span>
+        <div class="section-title">Production Video</div>
+        
+        <div class="glass-card">
+            <video controls playsinline preload="metadata"><source src="1.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Commercial Promo</div>
+                <div class="card-meta"><span>Showreel 2024</span><span>00:45</span></div>
             </div>
-            <div class="play-icon">▶</div>
         </div>
 
-        <div class="track-item" onclick="playTrack('track2.mp3', 'Track 2', this)">
-            <div class="track-info">
-                <span class="track-name">Track Two</span>
-                <span class="track-meta">MP3 Audio</span>
+        <div class="glass-card">
+            <video controls playsinline preload="metadata"><source src="2.mp4" type="video/mp4"></video>
+            <div class="card-content">
+                <div class="card-title">Creative Edit</div>
+                <div class="card-meta"><span>Music Video</span><span>01:12</span></div>
             </div>
-            <div class="play-icon">▶</div>
         </div>
 
-        <div class="track-item" onclick="playTrack('track3.mp3', 'Track 3', this)">
-            <div class="track-info">
-                <span class="track-name">Track Three</span>
-                <span class="track-meta">MP3 Audio</span>
+        <div class="section-title">Neuro Photography</div>
+        <div class="gallery-scroll glass-card" id="gallery-container" style="background: transparent; border: none; box-shadow: none; overflow: visible;">
             </div>
-            <div class="play-icon">▶</div>
+
+        <div class="section-title">Music Lab</div>
+        <div class="glass-card">
+            <div class="track-item" onclick="playTrack('s1.mp3', 'Cyber Atmosphere', this)">
+                <div class="track-icon">▶</div>
+                <div style="flex:1;">
+                    <div class="card-title" style="font-size: 0.9rem;">Cyber Atmosphere</div>
+                    <div class="card-meta" style="font-size: 0.7rem;">Original Mix</div>
+                </div>
+            </div>
+            <div class="track-item" onclick="playTrack('s2.mp3', 'Neon Night Drive', this)">
+                <div class="track-icon">▶</div>
+                <div style="flex:1;">
+                    <div class="card-title" style="font-size: 0.9rem;">Neon Night Drive</div>
+                    <div class="card-meta" style="font-size: 0.7rem;">Synthwave</div>
+                </div>
+            </div>
+            <div class="track-item" onclick="playTrack('s3.mp3', 'Deep Focus', this)">
+                <div class="track-icon">▶</div>
+                <div style="flex:1;">
+                    <div class="card-title" style="font-size: 0.9rem;">Deep Focus</div>
+                    <div class="card-meta" style="font-size: 0.7rem;">Ambient</div>
+                </div>
+            </div>
         </div>
+
+        <a href="https://t.me/RomanArtHolidays" class="tg-btn">Связаться со мной</a>
     </div>
-
-    <a href="https://t.me/RomanArtHolidays" class="tg-btn">Связаться со мной</a>
 
     <audio id="main-audio"></audio>
-
     <div class="sticky-player" id="stickyPlayer">
-        <div class="current-track-name" id="player-text">Loading...</div>
-        <button class="ctrl-btn" onclick="togglePlay()" id="play-pause-btn">❚❚</button>
+        <div class="player-info"><div class="player-visual"></div><div class="player-text" id="player-text">Select Track</div></div>
+        <button class="play-btn" onclick="togglePlay()" id="play-pause-btn">❚❚</button>
     </div>
 
     <script>
+        // --- 1. ГЕНЕРАЦИЯ ГАЛЕРЕИ (20 ШТУК) ---
+        const galleryContainer = document.getElementById('gallery-container');
+        const tags = ["CYBERPUNK", "NEON", "ABSTRACT", "SCIFI", "PORTRAIT", "DARK ART", "GLITCH", "SYNTH"];
+        
+        // Цикл создает 20 карточек
+        for (let i = 1; i <= 20; i++) {
+            // Берем случайный тег из списка
+            const randomTag = tags[Math.floor(Math.random() * tags.length)];
+            
+            // Если картинки p1.jpg, p2.jpg нет, покажет красивую заглушку с номером
+            const placeholder = `https://placehold.co/400x600/111/39ff14?text=ART+${i}&font=oswald`;
+            
+            const itemHTML = `
+                <div class="gallery-item">
+                    <img src="p${i}.jpg" alt="Art ${i}" onerror="this.src='${placeholder}'">
+                    <div class="gallery-overlay">
+                        <span class="gallery-tag">${randomTag}</span>
+                    </div>
+                </div>
+            `;
+            galleryContainer.innerHTML += itemHTML;
+        }
+
+        // --- 2. ЧАСТИЦЫ ---
+        const canvas = document.getElementById('canvas1'); const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        let particles = [];
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width; this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = Math.random() * 0.5 - 0.25; this.speedY = Math.random() * 0.5 - 0.25;
+            }
+            update() {
+                this.x += this.speedX; this.y += this.speedY;
+                if (this.x > canvas.width) this.x = 0; if (this.x < 0) this.x = canvas.width;
+                if (this.y > canvas.height) this.y = 0; if (this.y < 0) this.y = canvas.height;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(57, 255, 20, 0.3)'; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        function initParticles() { particles = []; for (let i = 0; i < 40; i++) { particles.push(new Particle()); } }
+        function animateParticles() { ctx.clearRect(0, 0, canvas.width, canvas.height); particles.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animateParticles); }
+        initParticles(); animateParticles();
+
+        // --- 3. МЕДИА ЛОГИКА ---
         const audio = document.getElementById('main-audio');
         const stickyPlayer = document.getElementById('stickyPlayer');
         const playerText = document.getElementById('player-text');
         const playPauseBtn = document.getElementById('play-pause-btn');
-        const trackItems = document.querySelectorAll('.track-item');
+        const trackIcons = document.querySelectorAll('.track-icon');
         const debugLog = document.getElementById('debug-log');
 
-        // --- ФУНКЦИЯ ПОКАЗА ОШИБОК ---
-        function logError(msg) {
-            debugLog.style.display = 'block';
-            debugLog.innerHTML += `⚠️ ${msg}<br>`;
-        }
-
-        // --- ПРОВЕРКА ВИДЕО ---
-        const vids = document.querySelectorAll('video');
-        vids.forEach(vid => {
-            vid.addEventListener('error', (e) => {
-                const src = vid.querySelector('source').src;
-                logError(`Ошибка загрузки видео: ${src.split('/').pop()} (Проверь название файла!)`);
-            }, true);
-            
-            // Если видео играет, выключаем музыку
-            vid.addEventListener('play', () => {
-                audio.pause();
-                playPauseBtn.innerText = "▶";
-            });
-        });
-
-        // --- ЛОГИКА МУЗЫКИ ---
         function playTrack(file, name, element) {
-            // 1. Визуальное выделение
-            trackItems.forEach(item => {
-                item.classList.remove('playing');
-                item.querySelector('.play-icon').innerText = '▶';
-            });
-            element.classList.add('playing');
-            element.querySelector('.play-icon').innerText = 'ılıılı';
-
-            // 2. Попытка запуска
-            audio.src = file;
-            playerText.innerText = name;
-            stickyPlayer.classList.add('active');
-            playPauseBtn.innerText = "❚❚";
-
-            const playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                playPromise.then(_ => {
-                    // Успешный старт
-                })
-                .catch(error => {
-                    console.log(error);
-                    logError(`Ошибка аудио: Не могу найти файл ${file}`);
-                    playPauseBtn.innerText = "⚠️";
-                });
-            }
+            trackIcons.forEach(icon => { icon.innerText = '▶'; icon.parentElement.classList.remove('playing'); });
+            const icon = element.querySelector('.track-icon'); icon.innerText = 'ılı'; element.classList.add('playing');
+            audio.src = file; playerText.innerText = name; stickyPlayer.classList.add('active'); playPauseBtn.innerText = "❚❚";
+            audio.play().catch(e => { debugLog.style.display = 'block'; debugLog.innerText = "Error: " + e.message; });
         }
+        function togglePlay() { if (audio.paused) { audio.play(); playPauseBtn.innerText = "❚❚"; } else { audio.pause(); playPauseBtn.innerText = "▶"; } }
+        document.querySelectorAll('video').forEach(vid => { vid.addEventListener('play', () => { audio.pause(); playPauseBtn.innerText = "▶"; }); });
 
-        function togglePlay() {
-            if (audio.paused) {
-                audio.play();
-                playPauseBtn.innerText = "❚❚";
-            } else {
-                audio.pause();
-                playPauseBtn.innerText = "▶";
-            }
-        }
-        
-        // Обработка ошибок аудио
-        audio.addEventListener('error', (e) => {
-            logError("Ошибка плеера: Файл не найден или формат не поддерживается.");
-        });
-
+        // --- 4. АНИМАЦИЯ СКРОЛЛА ---
+        const observer = new IntersectionObserver((entries) => { entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); } }); }, { threshold: 0.1 });
+        document.querySelectorAll('.glass-card, .section-title').forEach(el => observer.observe(el));
     </script>
 </body>
 </html>
