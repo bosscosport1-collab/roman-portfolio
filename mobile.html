@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Roman AI | Mobile Terminal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Manrope:wght@300;600&display=swap');
+
+        body {
+            background-color: #050505;
+            color: #fff;
+            font-family: 'Manrope', sans-serif;
+            margin: 0; padding: 20px;
+            padding-bottom: 100px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* --- ШАПКА --- */
+        .header {
+            text-align: center; margin-bottom: 30px; border-bottom: 1px solid #333; padding-bottom: 20px;
+        }
+        .logo {
+            font-family: 'Oswald', sans-serif; font-size: 1.8rem; color: #39ff14; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+        }
+        .status { font-size: 0.8rem; color: #666; margin-top: 5px; }
+        .status span { color: #39ff14; }
+
+        /* --- ОШИБКИ (Красный блок, если файл не найден) --- */
+        .error-log {
+            background: #330000; border: 1px solid red; color: #ffcccc;
+            padding: 10px; font-size: 0.8rem; margin-bottom: 20px;
+            display: none; border-radius: 8px; font-family: monospace;
+        }
+
+        /* --- РАЗДЕЛЫ --- */
+        .section-title {
+            font-family: 'Oswald', sans-serif; font-size: 1.2rem; color: #fff; margin-top: 40px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border-left: 3px solid #39ff14; padding-left: 10px;
+        }
+
+        /* --- ВИДЕО --- */
+        .video-card {
+            background: #111; border-radius: 12px; overflow: hidden; margin-bottom: 20px; border: 1px solid #222;
+        }
+        /* Стандартный плеер iOS */
+        video {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid #333;
+            max-height: 50vh;
+            background: #000;
+        }
+        .video-info { padding: 15px; }
+        .video-title { font-weight: bold; font-size: 1rem; color: #eee; }
+        .video-desc { font-size: 0.8rem; color: #888; margin-top: 5px; }
+
+        /* --- МУЗЫКА --- */
+        .track-list { display: flex; flex-direction: column; gap: 10px; }
+        .track-item {
+            background: #111; padding: 15px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #222; cursor: pointer; transition: 0.2s;
+        }
+        .track-item:active { background: #222; }
+        .track-item.playing { border-color: #39ff14; background: rgba(57, 255, 20, 0.1); }
+        .track-info { display: flex; flex-direction: column; }
+        .track-name { font-weight: 600; font-size: 1rem; }
+        .track-meta { font-size: 0.7rem; color: #666; }
+        .play-icon { font-size: 1.2rem; color: #39ff14; }
+
+        /* --- ПЛЕЕР --- */
+        .sticky-player {
+            position: fixed; bottom: 20px; left: 5%; width: 90%;
+            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px);
+            border: 1px solid #39ff14; border-radius: 50px; padding: 15px 25px;
+            display: none; align-items: center; justify-content: space-between;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 100; box-sizing: border-box;
+        }
+        .sticky-player.active { display: flex; }
+        .current-track-name { font-size: 0.9rem; color: #fff; max-width: 65%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ctrl-btn { background: none; border: none; color: #39ff14; font-size: 1.5rem; cursor: pointer; padding: 0 10px; }
+
+        .tg-btn {
+            display: block; text-align: center; background: #39ff14; color: #000; text-decoration: none; padding: 15px; border-radius: 10px; font-weight: bold; font-family: 'Oswald', sans-serif; margin-top: 40px; text-transform: uppercase; box-shadow: 0 0 20px rgba(57, 255, 20, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">ART-HOLIDAYS</div>
+        <div class="status">MOBILE TERMINAL</div>
+    </div>
+
+    <div id="debug-log" class="error-log"></div>
+
+    <div class="section-title">🎬 VIDEO PROD.</div>
+    
+    <div class="video-card">
+        <video controls playsinline preload="metadata" id="video1">
+            <source src="promo.mp4" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+        </video>
+        <div class="video-info">
+            <div class="video-title">Promo Video 1</div>
+            <div class="video-desc">Tap to play • Native Player</div>
+        </div>
+    </div>
+
+    <div class="video-card">
+        <video controls playsinline preload="metadata" id="video2">
+            <source src="promo2.mp4" type="video/mp4">
+        </video>
+        <div class="video-info">
+            <div class="video-title">Promo Video 2</div>
+            <div class="video-desc">Tap to play • Native Player</div>
+        </div>
+    </div>
+    <div class="video-card">
+        <video controls playsinline preload="metadata" id="video2">
+            <source src="promo3.mp4" type="video/mp4">
+        </video>
+        <div class="video-info">
+            <div class="video-title">Promo Video 3</div>
+            <div class="video-desc">Tap to play • Native Player</div>
+        </div>
+    </div>
+
+    <div class="section-title">🎵 MUSIC LAB</div>
+    <div class="track-list">
+        <div class="track-item" onclick="playTrack('track.mp3', 'Track 1', this)">
+            <div class="track-info">
+                <span class="track-name">Track One</span>
+                <span class="track-meta">MP3 Audio</span>
+            </div>
+            <div class="play-icon">▶</div>
+        </div>
+
+        <div class="track-item" onclick="playTrack('track2.mp3', 'Track 2', this)">
+            <div class="track-info">
+                <span class="track-name">Track Two</span>
+                <span class="track-meta">MP3 Audio</span>
+            </div>
+            <div class="play-icon">▶</div>
+        </div>
+
+        <div class="track-item" onclick="playTrack('track3.mp3', 'Track 3', this)">
+            <div class="track-info">
+                <span class="track-name">Track Three</span>
+                <span class="track-meta">MP3 Audio</span>
+            </div>
+            <div class="play-icon">▶</div>
+        </div>
+    </div>
+
+    <a href="https://t.me/RomanArtHolidays" class="tg-btn">Связаться со мной</a>
+
+    <audio id="main-audio"></audio>
+
+    <div class="sticky-player" id="stickyPlayer">
+        <div class="current-track-name" id="player-text">Loading...</div>
+        <button class="ctrl-btn" onclick="togglePlay()" id="play-pause-btn">❚❚</button>
+    </div>
+
+    <script>
+        const audio = document.getElementById('main-audio');
+        const stickyPlayer = document.getElementById('stickyPlayer');
+        const playerText = document.getElementById('player-text');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const trackItems = document.querySelectorAll('.track-item');
+        const debugLog = document.getElementById('debug-log');
+
+        // --- ФУНКЦИЯ ПОКАЗА ОШИБОК ---
+        function logError(msg) {
+            debugLog.style.display = 'block';
+            debugLog.innerHTML += `⚠️ ${msg}<br>`;
+        }
+
+        // --- ПРОВЕРКА ВИДЕО ---
+        const vids = document.querySelectorAll('video');
+        vids.forEach(vid => {
+            vid.addEventListener('error', (e) => {
+                const src = vid.querySelector('source').src;
+                logError(`Ошибка загрузки видео: ${src.split('/').pop()} (Проверь название файла!)`);
+            }, true);
+            
+            // Если видео играет, выключаем музыку
+            vid.addEventListener('play', () => {
+                audio.pause();
+                playPauseBtn.innerText = "▶";
+            });
+        });
+
+        // --- ЛОГИКА МУЗЫКИ ---
+        function playTrack(file, name, element) {
+            // 1. Визуальное выделение
+            trackItems.forEach(item => {
+                item.classList.remove('playing');
+                item.querySelector('.play-icon').innerText = '▶';
+            });
+            element.classList.add('playing');
+            element.querySelector('.play-icon').innerText = 'ılıılı';
+
+            // 2. Попытка запуска
+            audio.src = file;
+            playerText.innerText = name;
+            stickyPlayer.classList.add('active');
+            playPauseBtn.innerText = "❚❚";
+
+            const playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(_ => {
+                    // Успешный старт
+                })
+                .catch(error => {
+                    console.log(error);
+                    logError(`Ошибка аудио: Не могу найти файл ${file}`);
+                    playPauseBtn.innerText = "⚠️";
+                });
+            }
+        }
+
+        function togglePlay() {
+            if (audio.paused) {
+                audio.play();
+                playPauseBtn.innerText = "❚❚";
+            } else {
+                audio.pause();
+                playPauseBtn.innerText = "▶";
+            }
+        }
+        
+        // Обработка ошибок аудио
+        audio.addEventListener('error', (e) => {
+            logError("Ошибка плеера: Файл не найден или формат не поддерживается.");
+        });
+
+    </script>
+</body>
+</html>

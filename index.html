@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Art-Holidays | Mobile Adaptive</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Manrope:wght@300&display=swap');
+
+        body {
+            margin: 0; padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Manrope', sans-serif;
+            height: 100vh;
+            overflow: hidden; /* Запрет скролла */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Предотвращение зума на айфонах при дабл-тапе */
+            touch-action: manipulation; 
+        }
+
+        /* --- СЛОИ --- */
+        #canvas1 { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -3; }
+        .bg-video-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; overflow: hidden; pointer-events: none; }
+        .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.5s ease; filter: brightness(0.4); }
+        .bg-video.active { opacity: 1; }
+        .bg-noise { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: -2; opacity: 0.8; pointer-events: none; }
+
+        /* ЯДРО */
+        .music-visual-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; display: flex; align-items: center; justify-content: center; overflow: hidden; z-index: 0; }
+        .music-visual-wrapper.active { opacity: 1; }
+        .pulse-core { width: 250px; height: 250px; border-radius: 50%; background: rgba(57, 255, 20, 0.05); border: 3px solid #39ff14; box-shadow: 0 0 60px rgba(57, 255, 20, 0.5), inset 0 0 20px rgba(57, 255, 20, 0.3); position: relative; transition: all 0.1s linear; will-change: transform, border-radius; }
+        .pulse-core::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; border-radius: 50%; background: radial-gradient(circle, rgba(57,255,20,0.4) 0%, transparent 70%); opacity: 0; transition: opacity 0.1s; z-index: -1; }
+
+        /* ЛОГОТИП */
+        .logo-container { position: absolute; top: 40px; left: 40px; z-index: 100; cursor: pointer; display: flex; align-items: center; }
+        .logo-oval { background: #39ff14; padding: 12px 30px; border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; position: relative; transition: 0.3s; box-shadow: 0 0 20px rgba(57, 255, 20, 0.3); animation: blob-shape 6s infinite linear; }
+        .logo-text { font-family: 'Oswald', sans-serif; font-weight: bold; font-size: 1.1rem; letter-spacing: 2px; color: #000; position: relative; z-index: 2; white-space: nowrap; }
+        .logo-oval::before { content: ''; position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px; border: 2px solid #39ff14; background: transparent; opacity: 0.8; animation: liquid-jitter 0.8s infinite linear; border-radius: 50px; }
+        
+        .sound-hint { margin-left: 20px; display: flex; align-items: center; gap: 10px; opacity: 0.8; animation: breathe 1.5s infinite ease-in-out; pointer-events: none; }
+        .hint-arrow { font-size: 1.5rem; color: #39ff14; font-weight: bold; }
+        .hint-text { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; color: #fff; white-space: nowrap; }
+        
+        @keyframes blob-shape { 0% { border-radius: 50px; } 50% { border-radius: 40px 60px 40px 60px / 60px 40px 60px 40px; } 100% { border-radius: 50px; } }
+        @keyframes liquid-jitter { 0% { border-radius: 50px; transform: scale(1); border-width: 2px; } 25% { border-radius: 45px 55px 45px 55px / 55px 45px 55px 45px; transform: scale(1.05); } 50% { border-radius: 55px 45px 55px 45px / 45px 55px 45px 55px; transform: scale(0.98); border-width: 3px; } 75% { border-radius: 40px 60px 40px 60px / 60px 40px 60px 40px; transform: scale(1.02); } 100% { border-radius: 50px; transform: scale(1); border-width: 2px; } }
+        @keyframes breathe { 0%, 100% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } }
+        .logo-container.paused .logo-oval { background: #222; box-shadow: none; animation: none; border-radius: 50px; }
+        .logo-container.paused .logo-text { color: #555; }
+        .logo-container.paused .logo-oval::before { animation: none; border-color: #444; opacity: 0.3; border-radius: 50px; }
+        .logo-container.paused .sound-hint { animation: none; opacity: 0.5; }
+        .logo-container.paused .hint-arrow { color: #555; }
+        .logo-container.paused .hint-text { color: #888; }
+
+        /* ИНТЕРФЕЙС ТЕКСТЫ */
+        .glitch-char { color: #888; transition: color 0.05s ease; display: inline-block; }
+        .glitch-char.active { color: #39ff14; text-shadow: 0 0 8px rgba(57, 255, 20, 0.8); transform: scale(1.1); font-weight: bold; }
+        .corner-text { position: absolute; font-size: 0.8rem; color: #888; letter-spacing: 1px; text-transform: uppercase; z-index: 20; font-family: 'Oswald', sans-serif; font-weight: normal; }
+        .tr { top: 40px; right: 40px; text-align: right; }
+        .bl { bottom: 40px; left: 40px; } 
+
+        .menu-container { position: relative; z-index: 10; text-align: center; width: 100%; }
+        .menu-item { font-family: 'Oswald', sans-serif; font-size: 8vw; line-height: 1.1; text-transform: uppercase; cursor: pointer; color: transparent; -webkit-text-stroke: 2px rgba(255,255,255,0.3); transition: 0.4s; display: block; margin: 10px 0; }
+        /* Эффект наведения и активного состояния */
+        .menu-item:hover, .menu-item.active-mobile { -webkit-text-stroke: 0px; color: #fff; transform: scale(1.05); text-shadow: 0 0 30px rgba(57, 255, 20, 0.5); }
+        .hover-info { position: fixed; pointer-events: none; background: #39ff14; color: #000; padding: 5px 10px; font-size: 0.8rem; font-weight: bold; border-radius: 4px; transform: translate(15px, 15px); opacity: 0; transition: opacity 0.2s; z-index: 20; }
+
+        /* ЧАТ */
+        .chat-toggle-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #000; border: 2px solid #39ff14; border-radius: 50%; cursor: pointer; z-index: 9998; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(57, 255, 20, 0.4); transition: 0.3s; }
+        .chat-toggle-btn:hover { transform: scale(1.1); box-shadow: 0 0 40px rgba(57, 255, 20, 0.8); background: #39ff14; }
+        .chat-icon { font-size: 1.5rem; color: #39ff14; }
+        .chat-toggle-btn:hover .chat-icon { color: #000; }
+        .chat-window { position: fixed; bottom: 100px; right: 30px; width: 320px; height: 450px; background: rgba(0, 0, 0, 0.95); border: 1px solid #39ff14; border-radius: 15px; z-index: 9998; display: none; flex-direction: column; box-shadow: 0 0 50px rgba(0,0,0,0.8); backdrop-filter: blur(10px); opacity: 0; transform: translateY(20px); transition: 0.3s ease; }
+        .chat-window.open { display: flex; opacity: 1; transform: translateY(0); }
+        .chat-header { padding: 15px; border-bottom: 1px solid #39ff14; display: flex; justify-content: space-between; align-items: center; background: rgba(57, 255, 20, 0.1); }
+        .bot-status { display: flex; gap: 10px; align-items: center; font-family: 'Oswald', sans-serif; text-transform: uppercase; font-size: 0.9rem; }
+        .status-dot { width: 8px; height: 8px; background: #39ff14; border-radius: 50%; animation: blink 2s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        .close-chat { cursor: pointer; font-weight: bold; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; max-width: 80%; line-height: 1.4; }
+        .msg-bot { align-self: flex-start; background: #111; border: 1px solid #333; color: #ccc; }
+        .msg-user { align-self: flex-end; background: rgba(57, 255, 20, 0.2); border: 1px solid #39ff14; color: #fff; }
+        .chat-input-area { padding: 15px; border-top: 1px solid #333; display: flex; gap: 10px; }
+        #chat-input { flex: 1; background: transparent; border: none; outline: none; color: #fff; font-family: 'Manrope', sans-serif; }
+        #send-btn { background: none; border: none; color: #39ff14; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        #start-screen { z-index: 10000; }
+
+        /* =========================================
+           МОБИЛЬНАЯ АДАПТАЦИЯ (RESPONSIVE)
+           ========================================= */
+        @media (max-width: 768px) {
+            /* Ядро меньше */
+            .pulse-core { width: 200px; height: 200px; }
+
+            /* Логотип меньше и компактнее */
+            .logo-container { top: 20px; left: 20px; transform: scale(0.85); transform-origin: top left; }
+            .sound-hint { display: none; } /* Скрываем подсказку звука на мобильных, чтобы не захламлять */
+
+            /* Текст справа сверху */
+            .tr { top: 25px; right: 20px; max-width: 150px; font-size: 0.7rem; }
+
+            /* Текст снизу (переносим в центр) */
+            .bl { bottom: 100px; left: 50%; transform: translateX(-50%); width: 100%; text-align: center; font-size: 0.7rem; pointer-events: none; }
+
+            /* Меню - шрифт чуть меньше, но читабельно */
+            .menu-item { font-size: 11vw; margin: 15px 0; }
+
+            /* Чат на весь экран (почти) */
+            .chat-window { width: 90%; right: 5%; bottom: 100px; height: 60vh; }
+            .chat-toggle-btn { bottom: 20px; right: 20px; width: 50px; height: 50px; }
+            
+            /* Start Screen */
+            #start-btn { width: 80%; padding: 15px; font-size: 1.2rem; text-align: center; }
+            
+            /* Скрываем hover-подсказку на тачскринах */
+            .hover-info { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="music.mp3" loop></audio>
+    <audio id="track-preview"></audio>
+
+    <div id="start-screen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; justify-content: center; align-items: center; transition: opacity 0.8s ease;">
+        <button id="start-btn" style="background: transparent; color: #39ff14; font-family: 'Oswald', sans-serif; font-size: 1.5rem; letter-spacing: 4px; padding: 20px 50px; border: 1px solid #39ff14; border-radius: 50px; cursor: pointer; text-transform: uppercase; transition: 0.3s;">
+            ENTER EXPERIENCE
+        </button>
+    </div>
+
+    <canvas id="canvas1"></canvas>
+    <div class="bg-noise"></div>
+
+    <div class="bg-video-container">
+        <video class="bg-video" id="vid-video" src="" muted loop playsinline></video> 
+        <video class="bg-video" id="vid-photo" src="photo.mp4" muted loop playsinline></video> 
+        <video class="bg-video" id="vid-code" src="promo2.mp4" muted loop playsinline></video>
+        <div id="visual-circle" class="music-visual-wrapper">
+            <div class="pulse-core" id="audio-core"></div>
+        </div>
+    </div>
+
+    <div class="logo-container paused" id="logo-controller">
+        <div class="logo-oval"><span class="logo-text">ART-HOLIDAYS</span></div>
+        <div class="sound-hint"><div class="hint-arrow">←</div><div class="hint-text" id="hint-text">MUTE MUSIC</div></div>
+    </div>
+
+    <div class="corner-text tr glitch-target">ROMAN AI CREATOR<br>EST. 2024</div>
+    <div class="corner-text bl glitch-target">SCROLL TO EXPLORE<br>OR SELECT CATEGORY</div>
+    
+    <div class="hover-info" id="cursor-tip">VIEW WORKS</div>
+
+    <nav class="menu-container">
+        <div class="menu-item" data-target="vid-video" data-type="video" data-tip="Next Video">PROD. VIDEO</div>
+        <div class="menu-item" data-target="visual-circle" data-type="music" data-tip="Next Track">MUSIC LAB</div>
+        <div class="menu-item" data-target="vid-photo" data-type="photo" data-tip="View Gallery">NEURO PHOTO</div>
+        <div class="menu-item" data-target="vid-code" data-type="code" data-tip="Get Support">CODE & DEV</div>
+    </nav>
+
+    <div class="chat-toggle-btn" id="chatToggle"><div class="chat-icon">💬</div></div>
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header"><div class="bot-status"><div class="status-dot"></div>AI SUPPORT</div><div class="close-chat" id="closeChat">✕</div></div>
+        <div class="chat-body" id="chatBody"></div>
+        <div class="chat-input-area"><input type="text" id="chat-input" placeholder="Напишите вопрос..." autocomplete="off"><button id="send-btn">SEND</button></div>
+    </div>
+
+    <script>
+        /* =========================================
+           0. НАСТРОЙКИ ПЛЕЙЛИСТОВ
+           ========================================= */
+        const videoPlaylist = ["promo.mp4", "promo2.mp4", "promo3.mp4"];
+        const musicPlaylist = ["track.mp3", "track2.mp3", "track3.mp3"];
+        let currentVideoIndex = -1; 
+        let currentMusicIndex = -1;
+
+        /* =========================================
+           1. ЧАСТИЦЫ
+           ========================================= */
+        const canvas = document.getElementById('canvas1'); const ctx = canvas.getContext('2d'); canvas.width = window.innerWidth; canvas.height = window.innerHeight; let particlesArray; let mouse = { x: -500, y: -500, radius: 150 }; window.addEventListener('mousemove', function(event) { mouse.x = event.x; mouse.y = event.y; }); class Particle { constructor(x, y) { this.x = x; this.y = y; this.baseX = x; this.baseY = y; this.size = (Math.random() * 2) + 1; this.density = (Math.random() * 30) + 1; this.color = '#39ff14'; this.speedX = (Math.random() * 1) - 0.5; this.speedY = (Math.random() * 1) - 0.5; } draw() { ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.closePath(); ctx.fill(); } update() { this.x += this.speedX; this.y += this.speedY; if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX; if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY; let dx = mouse.x - this.x; let dy = mouse.y - this.y; let distance = Math.sqrt(dx * dx + dy * dy); if (distance < mouse.radius) { let force = (mouse.radius - distance) / mouse.radius; let directionX = (dx / distance) * force * this.density; let directionY = (dy / distance) * force * this.density; this.x -= directionX; this.y -= directionY; } } } function initParticles() { particlesArray = []; let numberOfParticles = (canvas.height * canvas.width) / 9000; for (let i = 0; i < numberOfParticles; i++) { let x = Math.random() * canvas.width; let y = Math.random() * canvas.height; particlesArray.push(new Particle(x, y)); } } function animateParticles() { ctx.clearRect(0, 0, canvas.width, canvas.height); for (let i = 0; i < particlesArray.length; i++) { particlesArray[i].draw(); particlesArray[i].update(); } requestAnimationFrame(animateParticles); } initParticles(); animateParticles(); window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; initParticles(); });
+
+        /* =========================================
+           2. АУДИО И ЯДРО
+           ========================================= */
+        const startScreen = document.getElementById('start-screen'); const startBtn = document.getElementById('start-btn'); const mainMusic = document.getElementById('bg-music'); const trackPreview = document.getElementById('track-preview'); const audioCore = document.getElementById('audio-core');
+        mainMusic.volume = 0.3; trackPreview.volume = 1.0; 
+        
+        let animationId;
+        function animateCore() { if (trackPreview.paused) { audioCore.style.transform = 'scale(1)'; audioCore.style.borderRadius = '50%'; audioCore.style.borderColor = '#39ff14'; audioCore.style.boxShadow = '0 0 60px rgba(57, 255, 20, 0.4)'; return; } const time = Date.now() / 150; const beat = (Math.sin(time * 3) + Math.cos(time * 2)) > 1.2 ? 1.15 : 1.0; const wobble = Math.random() * 0.05; const scale = beat + wobble; const r1 = 50 + (Math.sin(time * 1.2) * 20); const r2 = 50 + (Math.cos(time * 1.5) * 20); const r3 = 50 + (Math.sin(time * 1.8) * 20); const r4 = 50 + (Math.cos(time * 2.0) * 20); audioCore.style.transform = `scale(${scale})`; audioCore.style.borderRadius = `${r1}% ${100-r1}% ${r2}% ${100-r2}% / ${r3}% ${r4}% ${100-r3}% ${100-r4}%`; if (scale > 1.1) { audioCore.style.boxShadow = `0 0 100px rgba(57, 255, 20, 0.9), inset 0 0 40px rgba(57, 255, 20, 0.6)`; audioCore.style.borderColor = '#fff'; } else { audioCore.style.boxShadow = `0 0 60px rgba(57, 255, 20, 0.4)`; audioCore.style.borderColor = '#39ff14'; } animationId = requestAnimationFrame(animateCore); }
+
+        const logoController = document.getElementById('logo-controller'); const hintText = document.getElementById('hint-text');
+        function toggleBackgroundMusic() { if (mainMusic.paused) { mainMusic.play(); logoController.classList.remove('paused'); hintText.innerText = "MUTE MUSIC"; } else { mainMusic.pause(); logoController.classList.add('paused'); hintText.innerText = "PLAY MUSIC"; } }
+        logoController.addEventListener('click', toggleBackgroundMusic);
+
+        // ВХОД
+        startBtn.addEventListener('click', () => {
+            mainMusic.play().catch(e => console.log("Bg Music:", e));
+            logoController.classList.remove('paused'); 
+            const vidVideo = document.getElementById('vid-video');
+            if (videoPlaylist.length > 0) vidVideo.src = videoPlaylist[0];
+            document.querySelectorAll('video').forEach(vid => { if(vid.src) vid.play(); });
+            startScreen.style.opacity = '0';
+            setTimeout(() => { startScreen.style.display = 'none'; }, 800);
+        });
+        startBtn.addEventListener('mouseenter', () => { startBtn.style.background = '#39ff14'; startBtn.style.color = '#000'; }); startBtn.addEventListener('mouseleave', () => { startBtn.style.background = 'transparent'; startBtn.style.color = '#39ff14'; });
+
+        /* =========================================
+           3. ЛОГИКА МЕНЮ (МЫШЬ + ТАЧ)
+           ========================================= */
+        const items = document.querySelectorAll('.menu-item'); 
+        const bgElements = document.querySelectorAll('.bg-video, .music-visual-wrapper'); 
+        const tip = document.getElementById('cursor-tip');
+        
+        function activateItem(item) {
+            const targetId = item.getAttribute('data-target'); 
+            const type = item.getAttribute('data-type'); 
+            
+            // Сброс стилей мобильного меню
+            items.forEach(i => i.classList.remove('active-mobile'));
+            item.classList.add('active-mobile');
+
+            mainMusic.pause(); 
+            bgElements.forEach(el => el.classList.remove('active')); 
+            
+            const targetEl = document.getElementById(targetId);
+            
+            if (type === 'music') {
+                currentMusicIndex = (currentMusicIndex + 1) % musicPlaylist.length;
+                trackPreview.src = musicPlaylist[currentMusicIndex];
+                trackPreview.currentTime = 0; 
+                trackPreview.play(); 
+                if(targetEl) targetEl.classList.add('active'); 
+                animateCore(); 
+            } 
+            else if (type === 'video' && targetId === 'vid-video') {
+                currentVideoIndex = (currentVideoIndex + 1) % videoPlaylist.length;
+                targetEl.src = videoPlaylist[currentVideoIndex];
+                targetEl.muted = false; targetEl.volume = 1.0; targetEl.currentTime = 0; targetEl.play();
+                if(targetEl) targetEl.classList.add('active'); 
+            }
+            else if (type === 'video' || type === 'photo' || type === 'code') {
+                if(targetEl) {
+                    targetEl.classList.add('active');
+                    if(targetEl.tagName === 'VIDEO') {
+                        targetEl.muted = false; targetEl.volume = 1.0; targetEl.currentTime = 0; targetEl.play();
+                    }
+                }
+            }
+            tip.textContent = item.getAttribute('data-tip'); 
+            tip.style.opacity = 1; 
+        }
+
+        function deactivateItem(item) {
+            const type = item.getAttribute('data-type'); 
+            const targetId = item.getAttribute('data-target'); 
+            const targetEl = document.getElementById(targetId); 
+            
+            item.classList.remove('active-mobile');
+
+            if (type === 'music') { trackPreview.pause(); cancelAnimationFrame(animationId); } 
+            else if (targetEl && targetEl.tagName === 'VIDEO') { targetEl.muted = true; } 
+            
+            bgElements.forEach(el => el.classList.remove('active')); 
+            if(startScreen.style.display === 'none' && !logoController.classList.contains('paused')) { mainMusic.play(); } 
+            tip.style.opacity = 0; 
+        }
+
+        items.forEach(item => { 
+            // Мышь
+            item.addEventListener('mouseenter', () => activateItem(item)); 
+            item.addEventListener('mouseleave', () => deactivateItem(item));
+            
+            // Тач (для мобильных)
+            item.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Предотвращаем двойное срабатывание
+                activateItem(item);
+            });
+        }); 
+        
+        document.addEventListener('mousemove', (e) => { tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; });
+
+        // ЧАТ И ГЛИТЧ
+        const TELEGRAM_USERNAME = "RomanArtHolidays"; const chatToggle = document.getElementById('chatToggle'); const chatWindow = document.getElementById('chatWindow'); const closeChat = document.getElementById('closeChat'); const chatBody = document.getElementById('chatBody'); const chatInput = document.getElementById('chat-input'); const sendBtn = document.getElementById('send-btn'); let isChatOpen = false; let hasGreeted = false; function toggleChat() { isChatOpen = !isChatOpen; if (isChatOpen) { chatWindow.style.display = 'flex'; setTimeout(() => chatWindow.classList.add('open'), 10); if (!hasGreeted) { setTimeout(() => addBotMessage("Привет! Я цифровой помощник Art-Holidays. 👋"), 500); setTimeout(() => addBotMessage("Опишите задачу (Видео, Трек, Фото?), и я переведу вас на Романа."), 1500); hasGreeted = true; } } else { chatWindow.classList.remove('open'); setTimeout(() => chatWindow.style.display = 'none', 300); } } chatToggle.addEventListener('click', toggleChat); closeChat.addEventListener('click', toggleChat); function sendMessage() { const text = chatInput.value.trim(); if (text === "") return; addUserMessage(text); chatInput.value = ""; setTimeout(() => { addBotMessage("Соединяю с Романом через защищенный канал..."); setTimeout(() => { const url = `https://t.me/${TELEGRAM_USERNAME}?text=${encodeURIComponent("Привет! Пишу с сайта: " + text)}`; window.open(url, '_blank'); }, 1500); }, 800); } sendBtn.addEventListener('click', sendMessage); chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); }); function addBotMessage(text) { const div = document.createElement('div'); div.className = 'msg msg-bot'; div.innerText = text; chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight; } function addUserMessage(text) { const div = document.createElement('div'); div.className = 'msg msg-user'; div.innerText = text; chatBody.appendChild(div); chatBody.scrollTop = chatBody.scrollHeight; }
+
+        const glitchTargets = document.querySelectorAll('.glitch-target');
+        function prepareGlitchText(element) { let html = element.innerHTML.replace(/<br\s*\/?>/gi, '||BR||'); let newHtml = ''; for (let char of html) { if (char === '|' || char === 'B' || char === 'R') { newHtml += char; } else if (char.trim() === '') { newHtml += char; } else { newHtml += `<span class="glitch-char">${char}</span>`; } } element.innerHTML = newHtml.replace(/\|\|BR\|\|/g, '<br>'); }
+        glitchTargets.forEach(prepareGlitchText);
+        function runGlitchLoop(element) { const chars = element.querySelectorAll('.glitch-char'); if (chars.length === 0) return; setInterval(() => { const count = Math.floor(Math.random() * 3) + 1; for (let i = 0; i < count; i++) { const randomIndex = Math.floor(Math.random() * chars.length); const char = chars[randomIndex]; char.classList.add('active'); setTimeout(() => { char.classList.remove('active'); }, Math.random() * 200 + 50); } }, Math.random() * 200 + 100); }
+        glitchTargets.forEach(runGlitchLoop);
+    </script>
+<script>
+    // Проверка на мобильное устройство
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        
+        // Создаем затемнение и кнопку
+        const mobileAlert = document.createElement('div');
+        mobileAlert.style.position = 'fixed';
+        mobileAlert.style.top = '0';
+        mobileAlert.style.left = '0';
+        mobileAlert.style.width = '100%';
+        mobileAlert.style.height = '100%';
+        mobileAlert.style.background = '#000';
+        mobileAlert.style.zIndex = '99999'; // Поверх всего
+        mobileAlert.style.display = 'flex';
+        mobileAlert.style.flexDirection = 'column';
+        mobileAlert.style.alignItems = 'center';
+        mobileAlert.style.justifyContent = 'center';
+        mobileAlert.style.textAlign = 'center';
+
+        mobileAlert.innerHTML = `
+            <div style="font-family: sans-serif; color: #39ff14; font-size: 1.5rem; margin-bottom: 20px; font-weight: bold;">
+                MOBILE DEVICE DETECTED
+            </div>
+            <p style="color: #fff; font-family: sans-serif; margin-bottom: 30px; max-width: 80%;">
+                Для наилучшего опыта на телефоне мы подготовили специальную версию.
+            </p>
+            <a href="mobile.html" style="
+                background: #39ff14; 
+                color: #000; 
+                text-decoration: none; 
+                padding: 15px 30px; 
+                border-radius: 30px; 
+                font-weight: bold; 
+                font-family: sans-serif;
+                text-transform: uppercase;
+                box-shadow: 0 0 20px rgba(57,255,20,0.5);
+            ">
+                ОТКРЫТЬ МОБИЛЬНУЮ ВЕРСИЮ
+            </a>
+        `;
+
+        document.body.appendChild(mobileAlert);
+    }
+</script>
+</body>
+</html>
