@@ -14,15 +14,23 @@
             margin: 0; padding: 0;
             min-height: 100vh;
             -webkit-tap-highlight-color: transparent;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Важно: скрываем горизонтальный скролл всей страницы */
         }
 
-        /* ФОН */
+        /* --- ФОН --- */
         #canvas1 { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2; }
         .bg-noise { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: -1; opacity: 0.8; pointer-events: none; }
         .top-glow { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); width: 300px; height: 300px; background: radial-gradient(circle, rgba(57,255,20,0.15) 0%, transparent 70%); z-index: -1; pointer-events: none; }
 
-        .container { padding: 20px; padding-bottom: 120px; max-width: 600px; margin: 0 auto; }
+        .container {
+            /* Убираем боковые отступы, чтобы свайпер был от края до края */
+            padding: 20px 0 120px 0; 
+            max-width: 100%; margin: 0 auto;
+        }
+        /* Для остальных блоков возвращаем отступы */
+        .header, .glass-card, .section-title, .tg-btn {
+            margin-left: 20px; margin-right: 20px;
+        }
 
         /* ШАПКА */
         .header { text-align: center; margin-bottom: 40px; margin-top: 20px; position: relative; }
@@ -31,10 +39,11 @@
         @keyframes blink { 50% { opacity: 0.3; } }
         .subtitle { font-size: 0.75rem; color: #888; letter-spacing: 3px; text-transform: uppercase; margin-top: 5px; }
 
-        /* СТЕКЛЯННЫЕ БЛОКИ */
+        /* ТИТУЛЫ */
         .section-title { font-family: 'Oswald', sans-serif; font-size: 1.1rem; color: #39ff14; margin-top: 50px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px; opacity: 0; animation: fadeUp 0.8s forwards; }
         .section-title::before { content: ''; width: 20px; height: 2px; background: #39ff14; box-shadow: 0 0 5px #39ff14; }
         
+        /* СТЕКЛЯННЫЕ КАРТОЧКИ (Для Видео и Музыки) */
         .glass-card { background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(57, 255, 20, 0.15); border-radius: 16px; overflow: hidden; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translateY(20px); transition: transform 0.3s, border-color 0.3s; }
         .glass-card.visible { animation: fadeUp 0.6s forwards; }
         @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
@@ -45,21 +54,46 @@
         .card-title { font-weight: 700; color: #fff; font-size: 1.1rem; margin-bottom: 5px; }
         .card-meta { font-size: 0.8rem; color: #888; display: flex; justify-content: space-between; }
 
-        /* ГАЛЕРЕЯ (СВАЙП) */
-        .gallery-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 20px; scroll-snap-type: x mandatory; -ms-overflow-style: none; scrollbar-width: none; }
-        .gallery-scroll::-webkit-scrollbar { display: none; }
+        /* =========================================
+           ИСПРАВЛЕННАЯ ГАЛЕРЕЯ (СВАЙПЕР)
+           ========================================= */
+        .gallery-wrapper {
+            display: flex;
+            flex-wrap: nowrap; /* Запрет переноса на новую строку */
+            overflow-x: auto; /* Разрешаем горизонтальный скролл */
+            gap: 15px;
+            padding: 10px 20px 30px 20px; /* Отступы по бокам и снизу для скроллбара */
+            /* Физика скролла */
+            scroll-snap-type: x mandatory; /* Доводка до центра */
+            -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+            
+            /* Скрываем полосу прокрутки, но оставляем функционал */
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        .gallery-wrapper::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
         
-        .gallery-item { min-width: 260px; height: 350px; background: #111; border-radius: 16px; scroll-snap-align: center; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
-        .gallery-item img {
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; /* ЭТО ГЛАВНОЕ: Сохраняет пропорции, обрезая лишнее */
-            object-position: center; /* Центрирует фото */
-            transition: 0.5s;
-            display: block;
+        .gallery-item {
+            /* ЖЕСТКИЕ РАЗМЕРЫ КАРТОЧКИ */
+            flex: 0 0 auto; /* Не сжиматься и не расти */
+            width: 280px;
+            height: 400px;
+            
+            background: #111;
+            border-radius: 16px;
+            scroll-snap-align: center; /* Центрировать при остановке скролла */
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .gallery-item img { 
+            width: 100%; height: 100%; 
+            object-fit: cover; /* Чтобы фото не плющило */
+            display: block; 
         }
         .gallery-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: linear-gradient(to top, #000, transparent); padding: 20px; box-sizing: border-box; }
-        .gallery-tag { background: #39ff14; color: #000; padding: 3px 8px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+        .gallery-tag { background: #39ff14; color: #000; padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 1px; }
 
         /* МУЗЫКА */
         .track-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; }
@@ -98,7 +132,7 @@
         <div class="section-title">Production Video</div>
         
         <div class="glass-card">
-            <video controls playsinline preload="metadata"><source src="promo.mp4" type="video/mp4"></video>
+            <video controls playsinline preload="metadata"><source src="1.mp4" type="video/mp4"></video>
             <div class="card-content">
                 <div class="card-title">Commercial Promo</div>
                 <div class="card-meta"><span>Showreel 2024</span><span>00:45</span></div>
@@ -106,42 +140,34 @@
         </div>
 
         <div class="glass-card">
-            <video controls playsinline preload="metadata"><source src="promo2.mp4" type="video/mp4"></video>
+            <video controls playsinline preload="metadata"><source src="2.mp4" type="video/mp4"></video>
             <div class="card-content">
                 <div class="card-title">Creative Edit</div>
                 <div class="card-meta"><span>Music Video</span><span>01:12</span></div>
             </div>
         </div>
 
-        <div class="glass-card">
-            <video controls playsinline preload="metadata"><source src="promo3.mp4" type="video/mp4"></video>
-            <div class="card-content">
-                <div class="card-title">Creative Edit 2</div>
-                <div class="card-meta"><span>Music Video</span><span>01:12</span></div>
-            </div>
-        </div>
-
         <div class="section-title">Neuro Photography</div>
-        <div class="gallery-scroll glass-card" id="gallery-container" style="background: transparent; border: none; box-shadow: none; overflow: visible;">
+        <div class="gallery-wrapper" id="gallery-container">
             </div>
 
         <div class="section-title">Music Lab</div>
         <div class="glass-card">
-            <div class="track-item" onclick="playTrack('track.mp3', 'Cyber Atmosphere', this)">
+            <div class="track-item" onclick="playTrack('s1.mp3', 'Cyber Atmosphere', this)">
                 <div class="track-icon">▶</div>
                 <div style="flex:1;">
                     <div class="card-title" style="font-size: 0.9rem;">Cyber Atmosphere</div>
                     <div class="card-meta" style="font-size: 0.7rem;">Original Mix</div>
                 </div>
             </div>
-            <div class="track-item" onclick="playTrack('track2.mp3', 'Neon Night Drive', this)">
+            <div class="track-item" onclick="playTrack('s2.mp3', 'Neon Night Drive', this)">
                 <div class="track-icon">▶</div>
                 <div style="flex:1;">
                     <div class="card-title" style="font-size: 0.9rem;">Neon Night Drive</div>
                     <div class="card-meta" style="font-size: 0.7rem;">Synthwave</div>
                 </div>
             </div>
-            <div class="track-item" onclick="playTrack('track3.mp3', 'Deep Focus', this)">
+            <div class="track-item" onclick="playTrack('s3.mp3', 'Deep Focus', this)">
                 <div class="track-icon">▶</div>
                 <div style="flex:1;">
                     <div class="card-title" style="font-size: 0.9rem;">Deep Focus</div>
@@ -164,13 +190,10 @@
         const galleryContainer = document.getElementById('gallery-container');
         const tags = ["CYBERPUNK", "NEON", "ABSTRACT", "SCIFI", "PORTRAIT", "DARK ART", "GLITCH", "SYNTH"];
         
-        // Цикл создает 20 карточек
         for (let i = 1; i <= 20; i++) {
-            // Берем случайный тег из списка
             const randomTag = tags[Math.floor(Math.random() * tags.length)];
-            
-            // Если картинки p1.jpg, p2.jpg нет, покажет красивую заглушку с номером
-            const placeholder = `https://placehold.co/400x600/111/39ff14?text=ART+${i}&font=oswald`;
+            // Заглушка теперь вертикальная, подстать карточке
+            const placeholder = `https://placehold.co/280x400/111/39ff14?text=NEURO+ART+${i}&font=oswald`;
             
             const itemHTML = `
                 <div class="gallery-item">
